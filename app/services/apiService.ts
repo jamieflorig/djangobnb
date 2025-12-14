@@ -43,11 +43,6 @@ const apiService = {
             throw error;
         }
     },
-    //             .catch((error => {
-    //                 reject(error);
-    //             }))
-    //     })
-    // },
 
     post: async function(url: string, data: any): Promise<any> {
         console.log('post', url, data);
@@ -55,14 +50,23 @@ const apiService = {
         const token = await getAccessToken();
         const fullUrl = `${process.env.NEXT_PUBLIC_API_HOST}${url}`;
 
+        const isFormData = typeof FormData !== 'undefined' && data instanceof FormData;
+
+        const headers: HeadersInit = {
+            'Authorization': `Bearer ${token}`,
+        };
+
+        const body = isFormData ? data : JSON.stringify(data);
+
+        if (!isFormData) {
+            headers['Content-Type'] = 'application/json';
+        }
+
         return new Promise((resolve, reject) => {
             fetch(fullUrl, {
             method: 'POST',
-            body: JSON.stringify(data),
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json' // Added Content-Type
-            }
+            body,
+            headers,
         })
 
         .then(response => {
@@ -87,12 +91,6 @@ const apiService = {
             }));
     });
 },
-    //         fetch(`${process.env.NEXT_PUBLIC_API_HOST}${url}`, {
-    //             method: 'POST',
-    //             body: JSON.stringify(data),
-    //             headers: {
-    //                 'Authorization': `Bearer ${token}`,
-    //                 'Accept': 'application/json',
     //                 'Content-Type': 'application/json'
     //             }
     //         })
