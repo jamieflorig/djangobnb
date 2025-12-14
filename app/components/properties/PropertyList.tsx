@@ -4,6 +4,9 @@ import React, { useEffect, useState } from "react";
 import PropertyListItem from "./PropertyListItem";
 import apiService from "@/app/services/apiService";
 
+import useLoginModal from "@/app/hooks/useLoginModal";
+import { useRouter } from "next/navigation";
+
 export type PropertyType = {
     id: string;
     title: string;
@@ -14,10 +17,12 @@ export type PropertyType = {
 
 interface PropertyListProps {
     landlord_id?: string | null;
+    favorites?: boolean | null;
 }
 
 const PropertyList: React.FC<PropertyListProps> = ({
-    landlord_id
+    landlord_id,
+    favorites
 }) => {
     const [properties, setProperties] = useState<PropertyType[]>([]);
 
@@ -42,26 +47,38 @@ const PropertyList: React.FC<PropertyListProps> = ({
     const getProperties = async () => {
         let url = '/api/properties/';
 
+        const params = new URLSearchParams();
+
         if (landlord_id) {
-            url += `?landlord_id=${landlord_id}`
+            params.append('landlord_id', landlord_id);
+
         }
+        if (favorites) {
+            params.append('is_favorites', 'true');
+        }
+        const queryString = params.toString();
+        const finalUrl = queryString ? `${url}?${queryString}` : url;
 
-        const tmpProperties = await apiService.get(url)
-
-        setProperties(tmpProperties.data.map((property: PropertyType) => {
-            if (tmpProperties.favorites.includes(property.id)) {
-                property.is_favorite = true
-            } else {
-                property.is_favorite = false
-            }
-
-            return property
-        }));
-    };
+         try {
+        const response = await apiService.get(finalUrl);
+        
+        // Handle the response based on whether we're fetching favorites or not
+        const propertiesData = favorites 
+            ? response.data  // If fetching favorites, the API should return only favorited properties
+            : response.data.map((property: PropertyType) => ({
+                ...property,
+                is_favorite: response.favorites?.includes(property.id) || false
+            }));
+        setProperties(propertiesData);
+    } catch (error) {
+        console.error('Error fetching properties:', error);
+        setProperties([]);
+    }
+};
 
     useEffect(() => {
         getProperties();
-    }, [landlord_id]);
+    }, [landlord_id, favorites]);
 
     return (
         <>
