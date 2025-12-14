@@ -1,12 +1,18 @@
-import { getAccessToken } from "../lib/actions";
+import { getAccessToken, refreshAccessToken, resetAuthCookies } from "../lib/actions";
+import { redirect } from 'next/navigation';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_HOST;
 
 const apiService = {
-    get: async function (url: string): Promise<any> {
+    get: async function (url: string, isRetry = false): Promise<any> {
         console.log('get', url);
 
         const token = await getAccessToken();
+        if (!token && !isRetry) {
+            // If there's no token and this isn't a retry, redirect to login
+            redirect('/login');
+        }
+
         const fullUrl = `${process.env.NEXT_PUBLIC_API_HOST}${url}`;
         console.log('Fetching URL:', fullUrl);
 
@@ -16,12 +22,30 @@ const apiService = {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
-                }
+                },
+                cache: 'no-store' // Prevent caching of authenticated requests
             });
 
             if (response.status === 404) {
                 console.log('Resource not found (404)');
                 return null;
+            }
+
+            // Handle 401 Unauthorized (token expired or invalid)
+            if (response.status === 401 && !isRetry) {
+                console.log('Access token expired, attempting to refresh...');
+                const refreshResult = await refreshAccessToken();
+                
+                if (refreshResult.success && refreshResult.accessToken) {
+                    // Retry the original request with the new token
+                    console.log('Token refreshed, retrying request...');
+                    return this.get(url, true); // Pass true to indicate this is a retry
+                } else {
+                    // If refresh failed, clear auth and redirect to login
+                    console.log('Refresh token failed, logging out...');
+                    await resetAuthCookies();
+                    redirect('/login');
+                }
             }
 
             if (!response.ok) {
@@ -40,6 +64,11 @@ const apiService = {
             
         } catch (error) {
             console.error('API Service Error:', error);
+            if (!isRetry) {
+                // Only redirect on first attempt to prevent infinite loops
+                await resetAuthCookies();
+                redirect('/login');
+            }
             throw error;
         }
     },
