@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import Image from "next/image";
 import { notFound } from "next/navigation";
+import Link from 'next/link';
 
 import ReservationSidebar from "@/app/components/properties/ReservationSidebar";
 import apiService from "@/app/services/apiService";
@@ -34,7 +35,7 @@ const PropertyDetailPage = async ({ params }: PropertyPageProps) => {
     const { id } = resolvedParams;
     const userId = await getUserId();
 
-    console.log('userId', userId);
+    console.log('userId', userId)
     
     if (!id) {
         return notFound();
@@ -67,19 +68,22 @@ const PropertyDetailPage = async ({ params }: PropertyPageProps) => {
  
                     <hr />
 
-                    <div className="py-6 flex items-center space-x-4">
+                    <Link 
+                        href={`/landlords/${property.landlord.id}`}
+                        className="py-6 flex items-center space-x-4"
+                    >
                         {property.landlord.avatar_url && (
                             <Image
                                 src={property.landlord.avatar_url}
                                 width={50}
                                 height={50}
                                 className="rounded-full"
-                                alt={property.landlord.name}
+                                alt="The user name"
                             />
                         )}
 
                         <p><strong>{property.landlord.name}</strong> is your host</p>
-                    </div>
+                    </Link>
 
                     <hr />
 

@@ -22,8 +22,8 @@ const PropertyListItem: React.FC<PropertyProps> = ({
                 <Image
                     fill
                     src={property.image_url}
-                    sizes="(max-width: 768px) 768px, (max-width: 1208px): 768px, 768px"
-                    className="hover:scale-110 object-cover transition h-full w-full"
+                    sizes="(max-width: 768px) 768px, (max-width: 1200px): 768px, 768px"
+                    className="hover:scale-110 object-cover transition"
                     alt="Beach house"
                 />
             </div>
