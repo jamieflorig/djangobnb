@@ -1,7 +1,7 @@
 import { getAccessToken, refreshAccessToken, resetAuthCookies } from "../lib/actions";
 import { redirect } from 'next/navigation';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_HOST;
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_HOST || 'http://localhost:8000';
 
 const apiService = {
     get: async function (url: string, isRetry = false): Promise<any> {
@@ -9,11 +9,13 @@ const apiService = {
 
         const token = await getAccessToken();
         if (!token && !isRetry) {
-            // If there's no token and this isn't a retry, redirect to login
-            redirect('/login');
+            // Return null instead of redirecting to let the component handle the redirect
+            return null;
         }
 
-        const fullUrl = `${process.env.NEXT_PUBLIC_API_HOST}${url}`;
+        // Ensure URL starts with a slash
+        const normalizedUrl = url.startsWith('/') ? url : `/${url}`;
+        const fullUrl = `${API_BASE_URL}${normalizedUrl}`;
         console.log('Fetching URL:', fullUrl);
 
         try {
@@ -23,15 +25,10 @@ const apiService = {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
                 },
-                cache: 'no-store' // Prevent caching of authenticated requests
+                credentials: 'include',
+                cache: 'no-store'
             });
 
-            if (response.status === 404) {
-                console.log('Resource not found (404)');
-                return null;
-            }
-
-            // Handle 401 Unauthorized (token expired or invalid)
             if (response.status === 401 && !isRetry) {
                 console.log('Access token expired, attempting to refresh...');
                 const refreshResult = await refreshAccessToken();

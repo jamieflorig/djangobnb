@@ -60,16 +60,39 @@ const PropertyList: React.FC<PropertyListProps> = ({
         const finalUrl = queryString ? `${url}?${queryString}` : url;
 
          try {
-        const response = await apiService.get(finalUrl);
-        
-        // Handle the response based on whether we're fetching favorites or not
-        const propertiesData = favorites 
-            ? response.data  // If fetching favorites, the API should return only favorited properties
-            : response.data.map((property: PropertyType) => ({
-                ...property,
-                is_favorite: response.favorites?.includes(property.id) || false
-            }));
-        setProperties(propertiesData);
+            const response = await apiService.get(finalUrl);
+            
+            // If response is null, it means we're not authenticated
+            if (response === null) {
+                console.log('Not authenticated, redirecting to login...');
+                // The apiService will handle the redirect to login
+                setProperties([]);
+                return;
+            }
+
+            // If response exists but doesn't have data, log and set empty array
+            if (!response.data) {
+                console.error('Invalid response format from server:', response);
+                setProperties([]);
+                return;
+            }
+            
+            // Handle the response based on whether we're fetching favorites or not
+            let propertiesData: PropertyType[] = [];
+            
+            if (favorites) {
+                // For favorites, the API should return an array of properties
+                propertiesData = Array.isArray(response.data) ? response.data : [];
+            } else {
+                // For regular property list, we need to map the favorites
+                const propertiesArray = Array.isArray(response.data) ? response.data : [];
+                propertiesData = propertiesArray.map((property: any) => ({
+                    ...property,
+                    is_favorite: response.favorites?.includes(property.id) || false
+                }));
+            }
+            
+            setProperties(propertiesData);
     } catch (error) {
         console.error('Error fetching properties:', error);
         setProperties([]);

@@ -2,22 +2,26 @@
 
 import { cookies } from 'next/headers';
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
+
 export async function handleLogin(userId: string, accessToken: string, refreshToken: string) {
-    (await cookies()).set('session_userid', userId, {
+    const cookieStore = await cookies();
+    
+    await cookieStore.set('session_userid', userId, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         maxAge: 60 * 60 * 24 * 7, // One week
         path: '/'
     });
 
-    (await cookies()).set('session_access_token', accessToken, {
+    await cookieStore.set('session_access_token', accessToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         maxAge: 60 * 60, // 60 minutes
         path: '/'
     });
 
-    (await cookies()).set('session_refresh_token', refreshToken, {
+    await cookieStore.set('session_refresh_token', refreshToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         maxAge: 60 * 60 * 24 * 7, // One week
@@ -26,17 +30,48 @@ export async function handleLogin(userId: string, accessToken: string, refreshTo
 }
 
 export async function resetAuthCookies() {
-    (await cookies()).set('session_userid', '');
-    (await cookies()).set('session_access_token', '');
-    (await cookies()).set('session_refresh_token', '');
+    const cookieStore = await cookies();
+    await cookieStore.delete('session_userid');
+    await cookieStore.delete('session_access_token');
+    await cookieStore.delete('session_refresh_token');
 }
 
-
-//Get data
-
 export async function getUserId() {
-    const userId = (await cookies()).get('session_userid')?.value
-    return userId ? userId : null
+    const cookieStore = await cookies();
+    const accessToken = cookieStore.get('session_access_token')?.value;
+    const userId = cookieStore.get('session_userid')?.value;
+    
+    if (!accessToken || !userId) {
+        return null;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/auth/me/`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${accessToken}`,
+                'Content-Type': 'application/json'
+            },
+            credentials: 'include',
+            cache: 'no-store'
+        });
+
+        if (!response.ok) {
+            if (response.status === 401) {
+                // Clear invalid tokens
+                cookieStore.delete('session_access_token');
+                cookieStore.delete('session_refresh_token');
+                cookieStore.delete('session_userid');
+            }
+            return null;
+        }
+
+        const user = await response.json();
+        return user.id;
+    } catch (error) {
+        console.error('Error fetching user data:', error);
+        return null;
+    }
 }
 
 export async function getAccessToken() {
