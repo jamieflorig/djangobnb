@@ -9,7 +9,6 @@ export type MessageType = {
     id: string;
     name: string;
     body: string;
-    token: string;
     conversationId: string;
     sent_to: UserType;
     created_by: UserType
