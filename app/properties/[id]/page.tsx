@@ -1,11 +1,9 @@
-import { useState, useEffect } from 'react';
-import Image from "next/image";
 import { notFound } from "next/navigation";
-import Link from 'next/link';
-
-import ReservationSidebar from "@/app/components/properties/ReservationSidebar";
-import apiService from "@/app/services/apiService";
 import { getUserId } from '@/app/lib/actions';
+import apiService from "@/app/services/apiService";
+import Image from "next/image";
+import Link from 'next/link';
+import ReservationSidebar from "@/app/components/properties/ReservationSidebar";
 
 export type PropertyType = {
     id: string;
@@ -29,14 +27,10 @@ interface PropertyPageProps {
     }
 }
 
-const PropertyDetailPage = async ({ params }: PropertyPageProps) => {
-    // Await the params object since it's a Promise in Next.js 13+
-    const resolvedParams = await Promise.resolve(params);
-    const { id } = resolvedParams;
+export default async function PropertyDetailPage({ params }: PropertyPageProps) {
+    const { id } = await params;
     const userId = await getUserId();
 
-    console.log('userId', userId)
-    
     if (!id) {
         return notFound();
     }
@@ -78,7 +72,7 @@ const PropertyDetailPage = async ({ params }: PropertyPageProps) => {
                                 width={50}
                                 height={50}
                                 className="rounded-full"
-                                alt="The user name"
+                                alt={property.landlord.name}
                             />
                         )}
 
@@ -90,15 +84,13 @@ const PropertyDetailPage = async ({ params }: PropertyPageProps) => {
                     <p className="mt-6 text-lg">
                         {property.description}
                     </p>
-                 </div>
+                </div>
                     
                 <ReservationSidebar 
                     property={property}
                     userId={userId}
                 />
             </div>
-        </main>   
-    )
+        </main>  
+    );
 }
-
-export default PropertyDetailPage;

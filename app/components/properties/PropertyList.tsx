@@ -7,12 +7,19 @@ import apiService from "@/app/services/apiService";
 import useLoginModal from "@/app/hooks/useLoginModal";
 import { useRouter } from "next/navigation";
 
+export type LandlordType = {
+    id: string;
+    name: string;
+    avatar_url: string;
+}
+
 export type PropertyType = {
     id: string;
     title: string;
     image_url: string;
     price_per_night: number;
-    is_favorite:boolean;
+    is_favorite: boolean;
+    landlord: LandlordType;
 }
 
 interface PropertyListProps {
@@ -84,10 +91,11 @@ const PropertyList: React.FC<PropertyListProps> = ({
                 // For favorites, the API should return an array of properties
                 propertiesData = Array.isArray(response.data) ? response.data : [];
             } else {
-                // For regular property list, we need to map the favorites
+                // For regular property list, we need to map the favorites and ensure landlord exists
                 const propertiesArray = Array.isArray(response.data) ? response.data : [];
                 propertiesData = propertiesArray.map((property: any) => ({
                     ...property,
+                    landlord: property.landlord,
                     is_favorite: response.favorites?.includes(property.id) || false
                 }));
             }
