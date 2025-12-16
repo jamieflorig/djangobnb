@@ -3,8 +3,7 @@
 import React, { useEffect, useState } from "react";
 import PropertyListItem from "./PropertyListItem";
 import apiService from "@/app/services/apiService";
-
-import useLoginModal from "@/app/hooks/useLoginModal";
+import useSearchModal from "@/app/hooks/useSearchModal";
 import { useRouter } from "next/navigation";
 
 export type LandlordType = {
@@ -31,7 +30,19 @@ const PropertyList: React.FC<PropertyListProps> = ({
     landlord_id,
     favorites
 }) => {
+    const searchModal = useSearchModal();
+
+    const country = searchModal.query.country;
+    const NumGuests = searchModal.query.guests;
+    const numBathrooms = searchModal.query.bathrooms;
+    const numBedrooms = searchModal.query.bedrooms;
+    const checkinDate = searchModal.query.checkIn;
+    const checkoutDate = searchModal.query.checkOut;
+    const category = searchModal.query.category;
     const [properties, setProperties] = useState<PropertyType[]>([]);
+
+    console.log('searchQuery:', searchModal.query);
+    console.log('numBedrooms:', numBedrooms)
 
     const markFavorite = (id: string, is_favorite: boolean) => {
         const tmpProperties = properties.map((property: PropertyType) => {
@@ -58,13 +69,44 @@ const PropertyList: React.FC<PropertyListProps> = ({
 
         if (landlord_id) {
             params.append('landlord_id', landlord_id);
-
         }
+        
         if (favorites) {
             params.append('is_favorites', 'true');
         }
+
+        if (country) {
+            params.append('country', country);
+        }
+
+        if (NumGuests) {
+            params.append('guests', NumGuests.toString());
+        }
+
+        if (numBathrooms) {
+            params.append('bathrooms', numBathrooms.toString());
+        }
+
+        if (numBedrooms) {
+            params.append('bedrooms', numBedrooms.toString());
+        }
+        
+        if (category) {
+            params.append('category', category);
+        }
+
+        if (checkinDate) {
+            params.append('check_in', checkinDate.toISOString());
+        }
+
+        if (checkoutDate) {
+            params.append('check_out', checkoutDate.toISOString());
+        }
+
         const queryString = params.toString();
         const finalUrl = queryString ? `${url}?${queryString}` : url;
+
+        console.log('Final URL:', finalUrl);
 
          try {
             const response = await apiService.get(finalUrl);
@@ -109,7 +151,7 @@ const PropertyList: React.FC<PropertyListProps> = ({
 
     useEffect(() => {
         getProperties();
-    }, [landlord_id, favorites]);
+    }, [category, searchModal.query]);
 
     return (
         <>
