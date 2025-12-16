@@ -50,7 +50,10 @@ const PropertyListItem: React.FC<PropertyProps> = ({
                     <div className="mt-2">
                         <p className="text-sm text-gray-800">{property.landlord.name}</p>
                         <div className="mt-1">
-                            <ContactButton />
+                            <ContactButton 
+                                userId={null} 
+                                landlordId={""}     
+                            />
                         </div>
                     </div>
                 )}
